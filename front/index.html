@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SemantiQuest - Semantic Word Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .game-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            flex: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .game-board {
+            margin-bottom: 30px;
+        }
+
+        .map-container {
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .semantic-map {
+            width: 100%;
+            height: 250px;
+            min-height: 250px;
+            background: linear-gradient(45deg, #1e3c72 0%, #2a5298 100%);
+            border-radius: 10px;
+            position: relative;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .word-dot {
+            position: absolute;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            font-size: 11px;
+            animation: pulse 2s infinite;
+            z-index: 5;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .word-dot:hover {
+            transform: scale(1.2) !important;
+            z-index: 10;
+        }
+
+        .dot-cold {
+            background: radial-gradient(circle, #66bb6a, #4caf50);
+        }
+
+        .dot-cool {
+            background: radial-gradient(circle, #42a5f5, #1976d2);
+        }
+
+        .dot-warm {
+            background: radial-gradient(circle, #ffb74d, #ff9800);
+        }
+
+        .dot-hot {
+            background: radial-gradient(circle, #e57373, #f44336);
+        }
+
+        .dot-burning {
+            background: radial-gradient(circle, #ffd700, #ffb300);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+        }
+
+        .control-panel {
+            display: flex;
+            flex-direction: row-reverse;
+            gap: 10px;
+            /*background: rgba(255,255,255,0.1);*/
+            /*border-radius: 15px;*/
+            /*padding: 20px;*/
+            /*backdrop-filter: blur(10px);*/
+            /*border: 1px solid rgba(255,255,255,0.2);*/
+        }
+
+        .input-section {
+            margin-bottom: 25px;
+            flex: 1;
+        }
+
+        .input-section h3 {
+            margin-bottom: 15px;
+            color: #fff;
+        }
+
+        .guess-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .guess-input:focus {
+            outline: none;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+        }
+
+        .btn-group {
+            display: flex;
+            flex-direction: row-reverse;
+            gap: 10px;
+            height: 60px;
+        }
+
+        .guess-btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            min-width: 54%;
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .guess-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .guess-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .hint-btn {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .hint-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .hint-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .hint-area {
+            position: absolute;
+            border: 3px dashed #ffd700;
+            border-radius: 50%;
+            background: rgba(255, 215, 0, 0.1);
+            pointer-events: none;
+            z-index: 2;
+            animation: hintPulse 2s infinite;
+        }
+
+        @keyframes hintPulse {
+            0%, 100% {
+                opacity: 0.6;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1.02);
+            }
+        }
+
+        .hint-notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            z-index: 1002;
+            animation: slideDown 0.5s ease-out;
+            font-weight: bold;
+        }
+
+        @keyframes slideDown {
+            0% {
+                transform: translateX(-50%) translateY(-100%);
+                opacity: 0;
+            }
+            100% {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .stats {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .guess-history {
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        .recent-guesses-heading {
+            margin-top: 20px;
+        }
+
+        .sort-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .sort-btn {
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .sort-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .sort-btn.active {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            transform: scale(1.02);
+        }
+
+        .guess-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            margin-bottom: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .guess-item.latest {
+            background: rgba(255, 215, 0, 0.2);
+            border: 1px solid rgba(255, 215, 0, 0.5);
+            animation: highlightLatest 2s ease-out;
+        }
+
+        @keyframes highlightLatest {
+            0% {
+                background: rgba(255, 215, 0, 0.4);
+                transform: scale(1.02);
+            }
+            100% {
+                background: rgba(255, 215, 0, 0.2);
+                transform: scale(1);
+            }
+        }
+
+        .similarity-score {
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 12px;
+        }
+
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid rgba(255, 255, 255, 0.3);
+            border-top: 6px solid #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .victory {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(45deg, #ffd700, #ffb300);
+            color: #333;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            z-index: 1001;
+            animation: victoryPop 0.5s ease-out;
+        }
+
+        @keyframes victoryPop {
+            0% {
+                transform: translate(-50%, -50%) scale(0.5);
+                opacity: 0;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 1024px) {
+            .game-board {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .semantic-map {
+                height: 500px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .semantic-map {
+                height: 400px;
+            }
+
+            .sort-controls {
+                flex-direction: column;
+            }
+
+            .sort-btn {
+                min-width: auto;
+            }
+
+            .control-panel{
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+<div id="loading" class="loading">
+    <div class="loading-spinner"></div>
+</div>
+
+<div class="game-container">
+    <div class="header">
+        <h1>🎯 SemantiQuest</h1>
+        <p>Find the hidden word by exploring semantic space!</p>
+    </div>
+
+    <div class="game-board">
+        <div class="map-container">
+            <div id="semantic-map" class="semantic-map">
+                <!-- Word dots will be added here dynamically -->
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div class="stats">
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div id="guess-count" class="stat-value">0</div>
+                        <div class="stat-label">Guesses</div>
+                    </div>
+                    <div class="stat-item">
+                        <div id="best-score" class="stat-value">0.00</div>
+                        <div class="stat-label">Best Score</div>
+                    </div>
+                    <div class="stat-item">
+                        <div id="target-word" class="stat-value">???</div>
+                        <div class="stat-label">Target</div>
+                    </div>
+                    <div class="stat-item">
+                        <div id="current-rank" class="stat-value">-</div>
+                        <div class="stat-label">Rank</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-section">
+                <input type="text" id="guess-input" class="guess-input"
+                       placeholder="Make a guess..." autocomplete="off">
+                <div class="btn-group">
+                    <button id="guess-btn" class="guess-btn">Submit Guess</button>
+                    <button id="hint-btn" class="hint-btn">💡Hint</button>
+                </div>
+            </div>
+
+        </div>
+        <div class="input-section">
+            <h3 class="recent-guesses-heading">Recent Guesses</h3>
+            <div class="sort-controls">
+                <button id="sort-similarity-desc" class="sort-btn active">🔥 Best First</button>
+                <button id="sort-similarity-asc" class="sort-btn">❄️ Worst First</button>
+                <button id="sort-order-desc" class="sort-btn">🕒 Latest First</button>
+                <button id="sort-order-asc" class="sort-btn">📅 Oldest First</button>
+            </div>
+            <div id="guess-history" class="guess-history">
+                <div style="text-align: center; opacity: 0.6; padding: 20px;">
+                    No guesses yet. Start exploring!
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="victory-modal" class="victory hidden">
+    <h2>🎉 Congratulations!</h2>
+    <p>You found the word "<span id="victory-word"></span>"!</p>
+    <p>Total guesses: <span id="victory-guesses"></span></p>
+    <button onclick="startNewGame()"
+            style="margin-top: 15px; padding: 10px 20px; border: none; border-radius: 5px; background: #333; color: white; cursor: pointer;">
+        Play Again
+    </button>
+</div>
+
+<script>
+    // Game state
+    let gameData = null;
+    let targetWord = '';
+    let targetEmbedding = null;
+    let guesses = [];
+    let gameWon = false;
+    let hintsUsed = 0;
+    let hintAreaVisible = false;
+    let currentSort = 'similarity-desc'; // Default sort
+    let latestGuessIndex = -1; // Track latest guess for highlighting
+
+    // Initialize game
+    async function initGame() {
+        try {
+            console.log('Loading game data...');
+
+            // Replace with your actual file path
+            const response = await fetch('http://localhost:8000/embeddings_quantized.json.br');
+            if (!response.ok) {
+                throw new Error(`Failed to load game data: ${response.status}`);
+            }
+
+            gameData = await response.json();
+            console.log('Game data loaded:', gameData.words.length, 'words');
+
+            // Pick random target word
+            const randomIndex = Math.floor(Math.random() * gameData.words.length/10);
+            targetWord = gameData.words[randomIndex];
+
+            // Decode target embedding
+            targetEmbedding = decodeQuantizedEmbedding(randomIndex);
+
+            console.log('Target word:', targetWord);
+
+            // Hide loading screen
+            document.getElementById('loading').classList.add('hidden');
+
+            // Setup event listeners
+            setupEventListeners();
+
+        } catch (error) {
+            console.error('Failed to initialize game:', error);
+            document.getElementById('loading').innerHTML =
+                '<div style="color: white; text-align: center;"><h2>Error Loading Game</h2><p>' +
+                error.message + '</p><p>Make sure embeddings_quantized.json.br is in the same folder.</p></div>';
+        }
+    }
+
+    function decodeQuantizedEmbedding(wordIndex) {
+        // Decode base64 quantized embedding
+        const base64Data = gameData.embeddings_q8;
+        const binaryString = atob(base64Data);
+        const bytes = new Uint8Array(binaryString.length);
+
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        // Extract embedding for specific word
+        const embeddingSize = gameData.shape[1]; // 384 dimensions
+        const startIdx = wordIndex * embeddingSize;
+        const quantizedEmbedding = bytes.slice(startIdx, startIdx + embeddingSize);
+
+        // Dequantize back to float
+        const {emb_min, emb_max, emb_scale} = gameData;
+        const embedding = new Float32Array(embeddingSize);
+
+        for (let i = 0; i < embeddingSize; i++) {
+            embedding[i] = (quantizedEmbedding[i] / emb_scale) + emb_min;
+        }
+
+        return embedding;
+    }
+
+    function calculateSimilarity(embedding1, embedding2) {
+        // Cosine similarity
+        let dotProduct = 0;
+        let norm1 = 0;
+        let norm2 = 0;
+
+        for (let i = 0; i < embedding1.length; i++) {
+            dotProduct += embedding1[i] * embedding2[i];
+            norm1 += embedding1[i] * embedding1[i];
+            norm2 += embedding2[i] * embedding2[i];
+        }
+
+        return dotProduct / (Math.sqrt(norm1) * Math.sqrt(norm2));
+    }
+
+    function setupEventListeners() {
+        const input = document.getElementById('guess-input');
+        const button = document.getElementById('guess-btn');
+        const hintButton = document.getElementById('hint-btn');
+
+        // Sort buttons
+        const sortBtns = {
+            'similarity-desc': document.getElementById('sort-similarity-desc'),
+            'similarity-asc': document.getElementById('sort-similarity-asc'),
+            'order-desc': document.getElementById('sort-order-desc'),
+            'order-asc': document.getElementById('sort-order-asc')
+        };
+
+        button.addEventListener('click', makeGuess);
+        hintButton.addEventListener('click', useHint);
+
+        // Add sort button listeners
+        Object.keys(sortBtns).forEach(sortType => {
+            sortBtns[sortType].addEventListener('click', () => {
+                currentSort = sortType;
+                updateSortButtons();
+                updateGuessHistory();
+            });
+        });
+
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !gameWon) {
+                makeGuess();
+            }
+        });
+
+        input.focus();
+    }
+
+    function updateSortButtons() {
+        const buttons = document.querySelectorAll('.sort-btn');
+        buttons.forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`sort-${currentSort}`).classList.add('active');
+    }
+
+    function makeGuess(hint = null) {
+        if (gameWon) return;
+        console.log('hint: ', hint)
+
+        const input = document.getElementById('guess-input');
+        const word = hint || input.value.trim().toLowerCase();
+        console.log('word: ', word)
+
+        if (!word) return;
+
+        // Check if word exists in our vocabulary
+        const wordIndex = gameData.words.indexOf(word);
+        if (wordIndex === -1) {
+            alert('Word not found in vocabulary. Try a different word.');
+            return;
+        }
+
+        // Check if already guessed
+        if (guesses.find(g => g.word === word)) {
+            // alert('You already guessed that word!');
+            return;
+        }
+
+        // Calculate similarity
+        const wordEmbedding = decodeQuantizedEmbedding(wordIndex);
+        const similarity = calculateSimilarity(wordEmbedding, targetEmbedding);
+
+        // Add to guesses
+        const guess = {
+            word: word,
+            similarity: similarity,
+            rank: calculateRank(similarity),
+            index: wordIndex,
+            guessIndex: guesses.length + 1,
+            timestamp: Date.now()
+        };
+
+        guesses.push(guess);
+        latestGuessIndex = guess.guessIndex; // Track latest guess
+
+        // Check for victory BEFORE updating UI
+        if (word === targetWord) {
+            // Update target display immediately
+            document.getElementById('target-word').textContent = targetWord;
+            winGame();
+        }
+
+        // Update UI
+        updateStats();
+        updateGuessHistory();
+        addWordToMap(guess);
+
+        // Clear input
+        input.value = '';
+    }
+
+    function calculateRank(similarity) {
+        // Estimate rank based on similarity (rough approximation)
+        if (similarity >= 0.9) return Math.floor(1 + (1 - similarity) * 100);
+        if (similarity >= 0.8) return Math.floor(100 + (0.9 - similarity) * 1000);
+        if (similarity >= 0.6) return Math.floor(1100 + (0.8 - similarity) * 2000);
+        return Math.floor(5100 + (0.6 - similarity) * 10000);
+    }
+
+    function getSimilarityColor(similarity) {
+        if (similarity >= 0.8) return 'dot-burning';
+        if (similarity >= 0.6) return 'dot-hot';
+        if (similarity >= 0.4) return 'dot-warm';
+        if (similarity >= 0.2) return 'dot-cool';
+        return 'dot-cold';
+    }
+
+    function getSimilarityLabel(similarity) {
+        if (similarity >= 0.8) return 'BURNING';
+        if (similarity >= 0.6) return 'HOT';
+        if (similarity >= 0.4) return 'WARM';
+        if (similarity >= 0.2) return 'COOL';
+        return 'COLD';
+    }
+
+    function updateStats() {
+        document.getElementById('guess-count').textContent = guesses.length;
+
+        const bestScore = guesses.length > 0 ?
+            Math.max(...guesses.map(g => g.similarity)).toFixed(3) : '0.000';
+        document.getElementById('best-score').textContent = bestScore;
+
+        const bestGuess = guesses.find(g => g.similarity === Math.max(...guesses.map(gg => gg.similarity)));
+        document.getElementById('current-rank').textContent = bestGuess ? bestGuess.rank : '-';
+    }
+
+    function getSortedGuesses() {
+        let sortedGuesses = [...guesses];
+
+        switch (currentSort) {
+            case 'similarity-desc':
+                sortedGuesses.sort((a, b) => b.similarity - a.similarity);
+                break;
+            case 'similarity-asc':
+                sortedGuesses.sort((a, b) => a.similarity - b.similarity);
+                break;
+            case 'order-desc':
+                sortedGuesses.sort((a, b) => b.guessIndex - a.guessIndex);
+                break;
+            case 'order-asc':
+                sortedGuesses.sort((a, b) => a.guessIndex - b.guessIndex);
+                break;
+        }
+
+        return sortedGuesses;
+    }
+
+    function updateGuessHistory() {
+        const historyDiv = document.getElementById('guess-history');
+
+        if (guesses.length === 0) {
+            historyDiv.innerHTML = '<div style="text-align: center; opacity: 0.6; padding: 20px;">No guesses yet. Start exploring!</div>';
+            return;
+        }
+
+        const sortedGuesses = getSortedGuesses();
+        console.log('guesses: ', guesses)
+
+        historyDiv.innerHTML = sortedGuesses.map((guess, index) => {
+            const isLatest = guess.guessIndex === latestGuessIndex;
+            return `
+                <div class="guess-item ${isLatest ? 'latest' : ''}">
+                    <span>${guess.guessIndex} - ${guess.word}</span>
+                    <span class="similarity-score ${getSimilarityColor(guess.similarity)}">
+                        ${(guess.similarity * 100).toFixed(1)}% - ${getSimilarityLabel(guess.similarity)}
+                    </span>
+                </div>
+            `;
+        }).join('');
+
+        // Reset latest guess tracking after a short delay
+        if (latestGuessIndex !== -1) {
+            setTimeout(() => {
+                latestGuessIndex = -1;
+                // Remove highlight class from all items
+                document.querySelectorAll('.guess-item.latest').forEach(item => {
+                    item.classList.remove('latest');
+                });
+            }, 2000);
+        }
+    }
+
+    function addWordToMap(guess) {
+        const map = document.getElementById('semantic-map');
+        const mapRect = map.getBoundingClientRect();
+        const mapWidth = map.offsetWidth;
+        const mapHeight = map.offsetHeight;
+
+        // Use UMAP coordinates if available
+        let x, y;
+
+        const wordIndex = guess.index;
+        if (gameData.coordinates_q8 && wordIndex !== -1) {
+            try {
+                // Decode UMAP coordinates
+                const coordsData = atob(gameData.coordinates_q8);
+                const coordsBytes = new Uint8Array(coordsData.length);
+                for (let i = 0; i < coordsData.length; i++) {
+                    coordsBytes[i] = coordsData.charCodeAt(i);
+                }
+
+                const coordIndex = wordIndex * 2; // 2D coordinates
+                if (coordIndex + 1 < coordsBytes.length) {
+                    const quantX = coordsBytes[coordIndex];
+                    const quantY = coordsBytes[coordIndex + 1];
+
+                    // Dequantize coordinates
+                    const {coord_min, coord_max, coord_scale} = gameData;
+                    const rawX = (quantX / coord_scale) + coord_min;
+                    const rawY = (quantY / coord_scale) + coord_min;
+
+                    // Normalize to map dimensions with padding
+                    const padding = 40;
+                    x = (rawX - coord_min) / (coord_max - coord_min) * (mapWidth - 2 * padding) + padding;
+                    y = (rawY - coord_min) / (coord_max - coord_min) * (mapHeight - 2 * padding) + padding;
+
+                    // Ensure coordinates are within bounds
+                    x = Math.max(padding, Math.min(mapWidth - padding, x));
+                    y = Math.max(padding, Math.min(mapHeight - padding, y));
+                } else {
+                    throw new Error('Invalid coordinate index');
+                }
+            } catch (error) {
+                console.warn('Failed to decode UMAP coordinates, using fallback positioning:', error);
+                // Fallback positioning
+                const similarity = guess.similarity;
+                const angle = Math.random() * 2 * Math.PI;
+                const distance = (1 - similarity) * Math.min(mapWidth, mapHeight) * 0.3 + 50;
+
+                x = mapWidth / 2 + Math.cos(angle) * distance;
+                y = mapHeight / 2 + Math.sin(angle) * distance;
+            }
+        } else {
+            // Fallback: position based on similarity
+            const similarity = guess.similarity;
+            const angle = Math.random() * 2 * Math.PI;
+            const distance = (1 - similarity) * Math.min(mapWidth, mapHeight) * 0.3 + 50;
+
+            x = mapWidth / 2 + Math.cos(angle) * distance;
+            y = mapHeight / 2 + Math.sin(angle) * distance;
+        }
+
+        const dotSize = Math.max(30, 30 + guess.similarity * 30);
+        const dot = document.createElement('div');
+        dot.className = `word-dot ${getSimilarityColor(guess.similarity)}`;
+        dot.style.left = `${x - dotSize / 2}px`;
+        dot.style.top = `${y - dotSize / 2}px`;
+        dot.style.width = `${dotSize}px`;
+        dot.style.height = `${dotSize}px`;
+        dot.style.fontSize = `${Math.max(10, 8 + guess.similarity * 6)}px`;
+        dot.textContent = guess.word;
+        dot.title = `${guess.word}: ${(guess.similarity * 100).toFixed(1)}% similarity`;
+
+        console.log(`Placing "${guess.word}" at (${x.toFixed(1)}, ${y.toFixed(1)}) with similarity ${(guess.similarity * 100).toFixed(1)}%`);
+
+        map.appendChild(dot);
+    }
+
+    function useHint() {
+        if (gameWon) return;
+
+        if (hintsUsed === 0) {
+            // First hint: Show vicinity area on map
+            showTargetVicinity();
+            hintsUsed = 1;
+            updateHintButton();
+            showHintNotification("💡 Target area highlighted on the map!");
+        } else if (hintsUsed === 1) {
+            // Second hint: Suggest a better word
+            suggestBetterWord();
+            hintsUsed = 2;
+            updateHintButton();
+        }
+    }
+
+    function showTargetVicinity() {
+        const map = document.getElementById('semantic-map');
+        const mapWidth = map.offsetWidth;
+        const mapHeight = map.offsetHeight;
+
+        // Calculate target position using same logic as addWordToMap
+        let targetX, targetY;
+        const targetIndex = gameData.words.indexOf(targetWord);
+
+        if (gameData.coordinates_q8 && targetIndex !== -1) {
+            try {
+                const coordsData = atob(gameData.coordinates_q8);
+                const coordsBytes = new Uint8Array(coordsData.length);
+                for (let i = 0; i < coordsData.length; i++) {
+                    coordsBytes[i] = coordsData.charCodeAt(i);
+                }
+
+                const coordIndex = targetIndex * 2;
+                if (coordIndex + 1 < coordsBytes.length) {
+                    const quantX = coordsBytes[coordIndex];
+                    const quantY = coordsBytes[coordIndex + 1];
+
+                    const {coord_min, coord_max, coord_scale} = gameData;
+                    const rawX = (quantX / coord_scale) + coord_min;
+                    const rawY = (quantY / coord_scale) + coord_min;
+
+                    const padding = 40;
+                    targetX = (rawX - coord_min) / (coord_max - coord_min) * (mapWidth - 2 * padding) + padding;
+                    targetY = (rawY - coord_min) / (coord_max - coord_min) * (mapHeight - 2 * padding) + padding;
+
+                    targetX = Math.max(padding, Math.min(mapWidth - padding, targetX));
+                    targetY = Math.max(padding, Math.min(mapHeight - padding, targetY));
+                } else {
+                    throw new Error('Invalid coordinate index');
+                }
+            } catch (error) {
+                targetX = mapWidth / 2;
+                targetY = mapHeight / 2;
+            }
+        } else {
+            targetX = mapWidth / 2;
+            targetY = mapHeight / 2;
+        }
+
+        // Create hint area
+        const hintArea = document.createElement('div');
+        hintArea.className = 'hint-area';
+        hintArea.id = 'hint-area';
+
+        const radius = Math.min(mapWidth, mapHeight) * 0.15; // 15% of map size
+        hintArea.style.left = `${targetX - radius}px`;
+        hintArea.style.top = `${targetY - radius}px`;
+        hintArea.style.width = `${radius * 2}px`;
+        hintArea.style.height = `${radius * 2}px`;
+
+        map.appendChild(hintArea);
+        hintAreaVisible = true;
+    }
+
+    function suggestBetterWord() {
+        // Find words that are closer to target than current best guess
+        const bestSimilarity = guesses.length > 0 ? Math.max(...guesses.map(g => g.similarity)) : 0;
+
+        // Calculate similarities for a sample of words to find a good hint
+        const sampleSize = Math.min(500, gameData.words.length);
+        const candidates = [];
+
+        for (let i = 0; i < sampleSize; i++) {
+            const randomIndex = Math.floor(Math.random() * gameData.words.length);
+            const word = gameData.words[randomIndex];
+
+            // Skip if already guessed or is the target
+            if (guesses.find(g => g.word === word) || word === targetWord) continue;
+
+            const embedding = decodeQuantizedEmbedding(randomIndex);
+            const similarity = calculateSimilarity(embedding, targetEmbedding);
+
+            // Only consider words better than current best guess
+            if (similarity > bestSimilarity + 0.1) { // At least 10% better
+                candidates.push({word, similarity});
+            }
+        }
+
+        if (candidates.length > 0) {
+            // Sort by similarity and pick one that's good but not too good
+            candidates.sort((a, b) => b.similarity - a.similarity);
+            const hintWord = candidates[Math.floor(candidates.length * 0.3)]; // Pick from top 30%
+
+            showHintNotification(`💡 Try "${hintWord.word}" - it's closer to the target!`);
+            makeGuess(hintWord.word)
+        } else {
+            showHintNotification("💡 You're doing great! Keep exploring the warm areas.");
+        }
+    }
+
+    function updateHintButton() {
+        const hintBtn = document.getElementById('hint-btn');
+        if (hintsUsed === 1) {
+            hintBtn.textContent = '💡 Hint';
+        } else if (hintsUsed >= 20) {
+            hintBtn.textContent = '💡 No More Hints';
+            hintBtn.disabled = true;
+        }
+    }
+
+    function showHintNotification(message) {
+        // Remove existing notification
+        const existing = document.getElementById('hint-notification');
+        if (existing) existing.remove();
+
+        const notification = document.createElement('div');
+        notification.id = 'hint-notification';
+        notification.className = 'hint-notification';
+        notification.textContent = message;
+
+        document.body.appendChild(notification);
+
+        // Auto-remove after 4 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 4000);
+    }
+
+    function winGame() {
+        gameWon = true;
+        document.getElementById('victory-word').textContent = targetWord;
+        document.getElementById('victory-guesses').textContent = guesses.length;
+        document.getElementById('victory-modal').classList.remove('hidden');
+    }
+
+    function startNewGame() {
+        // Reset game state
+        guesses = [];
+        gameWon = false;
+        hintsUsed = 0;
+        hintAreaVisible = false;
+        latestGuessIndex = -1;
+        currentSort = 'similarity-desc'; // Reset to default sort
+
+        // Pick new target
+        const randomIndex = Math.floor(Math.random() * gameData.words.length);
+        targetWord = gameData.words[randomIndex];
+        targetEmbedding = decodeQuantizedEmbedding(randomIndex);
+
+        console.log('New target word:', targetWord);
+
+        // Reset UI
+        document.getElementById('semantic-map').innerHTML = '';
+        document.getElementById('guess-history').innerHTML =
+            '<div style="text-align: center; opacity: 0.6; padding: 20px;">No guesses yet. Start exploring!</div>';
+        document.getElementById('target-word').textContent = '???';
+        document.getElementById('victory-modal').classList.add('hidden');
+
+        // Reset hint button
+        const hintBtn = document.getElementById('hint-btn');
+        hintBtn.textContent = '💡 Hint';
+        hintBtn.disabled = false;
+
+        // Reset sort buttons
+        updateSortButtons();
+
+        // Remove any existing hint notifications
+        const existing = document.getElementById('hint-notification');
+        if (existing) existing.remove();
+
+        updateStats();
+        document.getElementById('guess-input').focus();
+    }
+
+    // Start the game when page loads
+    window.addEventListener('load', initGame);
+</script>
+</body>
+</html>

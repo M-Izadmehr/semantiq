@@ -1,0 +1,27 @@
+# Semantic Word Game - Requirements
+# Install with: pip install -r requirements.txt
+
+# Core ML libraries
+sentence-transformers>=2.2.0
+umap-learn>=0.5.0
+scikit-learn>=1.0.0
+numpy>=1.21.0
+
+# Compression libraries
+brotli>=1.0.0
+
+# Optional: Advanced compression (install for best results)
+blosc2>=2.0.0        # Excellent for numerical arrays
+lz4>=4.0.0           # Very fast decompression
+
+# Optional: Better word lists
+nltk>=3.8
+# Uncomment if you want to use NLTK word corpus:
+# nltk.download('words')
+# nltk.download('brown')
+
+# For faster UMAP (optional)
+pynndescent>=0.5.0
+
+# Development/testing
+tqdm>=4.64.0
