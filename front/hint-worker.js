@@ -1,5 +1,3 @@
-// hint-worker.js - Web Worker for background hint calculations
-
 // State
 let gameData = null;
 let targetWord = null;
