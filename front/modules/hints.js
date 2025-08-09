@@ -66,10 +66,10 @@ export const HintSystem = {
     // Request a new hint calculation
     requestHint(bestGuess) {
         // Don't start new calculation if one is in progress
-        // if (this.isCalculating) {
-        //     console.log('Hint calculation already in progress');
-        //     return;
-        // }
+        if (this.isCalculating) {
+            console.log('Hint calculation already in progress');
+            return;
+        }
 
         // Check if cached hint is still better than best guess
         if (this.cachedHint && bestGuess) {
@@ -83,8 +83,6 @@ export const HintSystem = {
         this.isCalculating = true;
         this.lastRequestId++;
 
-        console.log('=== requestHint ===')
-        console.log('bestGuess: ', bestGuess)
         // Send request to worker
         this.worker.postMessage({
             type: 'CALCULATE_HINT',

@@ -1,5 +1,5 @@
 // modules/ui.js - UI management and DOM manipulation
-import { Embeddings } from './embeddings.js';
+import {Embeddings} from './embeddings.js';
 
 export const UI = {
     // Cached DOM elements
@@ -86,7 +86,7 @@ export const UI = {
     },
 
     // Add a word to the semantic map
-    addWordToMap(guess) {
+    addWordToMap(guess, isHint = false) {
         const map = this.elements.semanticMap;
         const mapWidth = map.offsetWidth;
         const mapHeight = map.offsetHeight;
@@ -125,7 +125,7 @@ export const UI = {
         x = Math.max(padding, Math.min(mapWidth - padding, x));
         y = Math.max(padding, Math.min(mapHeight - padding, y));
 
-        return { x, y };
+        return {x, y};
     },
 
     // Create a word dot element
@@ -205,7 +205,7 @@ export const UI = {
         if (guess.similarity == null) {
             return `
       <div class="guess-item ${extraClass}">
-        <span>${guess.guessNumber} - ${guess.word}</span>
+        <span>${guess.isHint ? '💡 ' : ''}${guess.guessNumber} - ${guess.word}</span>
         <span class="similarity-score">⏳ scoring…</span>
       </div>
     `;
@@ -215,7 +215,7 @@ export const UI = {
 
         return `
             <div class="guess-item ${extraClass}">
-                <span>${guess.guessNumber} - ${guess.word}</span>
+                <span>${guess.isHint ? '💡 ' : ''}${guess.guessNumber} - ${guess.word}</span>
                 <span class="similarity-score ${similarityClass}">
                     ${(guess.similarity * 100).toFixed(1)}% - ${label}
                 </span>
@@ -378,7 +378,7 @@ export const UI = {
     },
 
     // === Daily header helpers ===
-    updateDailyHeader({ dateStr, dailyNumber }) {
+    updateDailyHeader({dateStr, dailyNumber}) {
         this.elements.dailyTitle.textContent = `Daily #${dailyNumber}`;
         this.elements.dailyDate.textContent = dateStr;
     },
@@ -388,7 +388,9 @@ export const UI = {
         this.elements.nextDayBtn.style.opacity = isToday ? 0.5 : 1;
         this.elements.nextDayBtn.style.cursor = isToday ? 'not-allowed' : 'pointer';
     },
-    addPendingGuess(word) {
+    addPendingGuess(word, isHint) {
+        console.log('=== addPendingGuess ===')
+        console.log('isHint: ', isHint)
         // Fake a minimal guess object for rendering
         const guess = {
             word,
@@ -406,8 +408,8 @@ export const UI = {
         const dot = document.createElement('div');
         dot.className = 'word-dot dot-cool'; // neutral color
         const size = 30;
-        dot.style.left = `${x - size/2}px`;
-        dot.style.top = `${y - size/2}px`;
+        dot.style.left = `${x - size / 2}px`;
+        dot.style.top = `${y - size / 2}px`;
         dot.style.width = `${size}px`;
         dot.style.height = `${size}px`;
         dot.style.fontSize = `12px`;
@@ -421,7 +423,7 @@ export const UI = {
         const pendingRow = document.createElement('div');
         pendingRow.className = 'guess-item latest';
         pendingRow.innerHTML = `
-    <span>${guess.guessNumber} - ${word}</span>
+    <span>${isHint ? '💡 ' : ''}${guess.guessNumber} - ${word}</span>
     <span class="similarity-score">⏳ scoring…</span>
   `;
         history.prepend(pendingRow);

@@ -1,5 +1,5 @@
 // modules/game.js - Game state management
-import { Embeddings } from './embeddings.js';
+import {Embeddings} from './embeddings.js';
 
 export const Game = {
     dataLoaded: false,
@@ -40,8 +40,9 @@ export const Game = {
         this.currentDateStr = dateStr;
         this.pickTargetForDate(dateStr);
     },
-    enqueuePendingGuess(word) {
-        this.pendingGuesses.push({ word, timestamp: Date.now() });
+    enqueuePendingGuess(word, isHint = false) {
+        console.log('this.pendingGuesses: ', this.pendingGuesses)
+        this.pendingGuesses.push({word, timestamp: Date.now()});
     },
 
     drainPendingGuesses(processFn) {
@@ -64,23 +65,23 @@ export const Game = {
     // Validate a word guess
     validateWord(word) {
         if (!word) {
-            return { valid: false, reason: 'Please enter a word' };
+            return {valid: false, reason: 'Please enter a word'};
         }
 
         if (word.length > 50) {
-            return { valid: false, reason: 'Word too long' };
+            return {valid: false, reason: 'Word too long'};
         }
 
         if (!/^[a-z]+$/.test(word)) {
-            return { valid: false, reason: 'Only lowercase letters allowed' };
+            return {valid: false, reason: 'Only lowercase letters allowed'};
         }
 
         const wordIndex = this.data.words.indexOf(word);
         if (wordIndex === -1) {
-            return { valid: false, reason: 'Word not in vocabulary' };
+            return {valid: false, reason: 'Word not in vocabulary'};
         }
 
-        return { valid: true, index: wordIndex };
+        return {valid: true, index: wordIndex};
     },
 
     // Check if word was already guessed
@@ -89,14 +90,15 @@ export const Game = {
     },
 
     // Add a new guess
-    addGuess(word, similarity, index) {
+    addGuess(word, similarity, index, isHint = false) {
         const guess = {
             word,
             similarity,
             index,
             timestamp: Date.now(),
             guessNumber: this.guesses.length + 1,
-            rank: this.calculateRank(similarity)
+            rank: this.calculateRank(similarity),
+            isHint: isHint,
         };
 
         this.guesses.push(guess);
@@ -157,7 +159,7 @@ export const Game = {
     getTodayDateStr() {
         // Format YYYY-MM-DD in configured timezone
         // en-CA yields YYYY-MM-DD
-        return new Intl.DateTimeFormat('en-CA', { timeZone: this.timezone }).format(new Date());
+        return new Intl.DateTimeFormat('en-CA', {timeZone: this.timezone}).format(new Date());
     },
 
     isToday(dateStr) {
@@ -258,7 +260,7 @@ export const Game = {
             h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
             h = (h << 13) | (h >>> 19);
         }
-        return function() {
+        return function () {
             h = Math.imul(h ^ (h >>> 16), 2246822507);
             h = Math.imul(h ^ (h >>> 13), 3266489909);
             h ^= h >>> 16;
@@ -268,7 +270,7 @@ export const Game = {
 
     // mulberry32 PRNG from 32-bit seed
     _mulberry32(a) {
-        return function() {
+        return function () {
             let t = a += 0x6D2B79F5;
             t = Math.imul(t ^ (t >>> 15), t | 1);
             t ^= t + Math.imul(t ^ (t >>> 7), t | 61);

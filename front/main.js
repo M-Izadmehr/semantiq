@@ -111,7 +111,12 @@ function changeDay(dateStr) {
 }
 
 // Handle guess submission
-function handleGuess(wordOverride = null) {
+function handleGuess(wordOverride = null, isHint= false) {
+    console.log('=== handleGuess ===')
+    console.log('isHint: ', isHint)
+    console.log('wordOverride: ', wordOverride)
+    console.log('Game: ', Game)
+    console.log('Game.dataLoaded: ', Game.dataLoaded)
     if (Game.isWon) return;
 
     const word = (wordOverride || UI.elements.guessInput.value.trim().toLowerCase());
@@ -125,8 +130,8 @@ function handleGuess(wordOverride = null) {
         }
 
         // Show a placeholder item in history/map
-        UI.addPendingGuess(word);
-        Game.enqueuePendingGuess(word);
+        UI.addPendingGuess(word, isHint);
+        Game.enqueuePendingGuess(word, isHint);
 
         UI.showNotification('Scoring in a moment—keep guessing!');
         UI.elements.guessInput.value = '';
@@ -153,10 +158,10 @@ function handleGuess(wordOverride = null) {
     const similarity = Embeddings.similarity(embedding, Game.targetEmbedding);
 
     // Add guess to game state
-    const guess = Game.addGuess(word, similarity, wordIndex);
+    const guess = Game.addGuess(word, similarity, wordIndex, isHint);
 
     // Update UI
-    UI.addWordToMap(guess);
+    UI.addWordToMap(guess, isHint);
     UI.updateGuessHistory(Game.guesses, Game.currentSort);
     UI.updateStats(Game.getStats());
     Game.saveProgress(currentDateStr); // autosave
@@ -199,7 +204,7 @@ async function handleHint() {
 
     // Use the hint as a guess
     UI.showNotification(`💡 Try: ${hint.word}`);
-    handleGuess(hint.word);
+    handleGuess(hint.word, true);
     Game.hintsUsed++;
     UI.updateStats(Game.getStats());
     Game.saveProgress(currentDateStr);
@@ -259,6 +264,11 @@ function loadDaily(dateStr) {
             UI.showVictory(Game.targetWord, Game.guesses.length);
             UI.updateTargetWord(Game.targetWord);
         }
+
+        HintSystem.reset(Game.targetWord);
+        HintSystem.requestHint(Game.getBestGuess());
+
+
     } else {
         // brand new day: kick off worker to compute background hints
         HintSystem.reset(Game.targetWord);
