@@ -1,6 +1,9 @@
-
 let embeddings = null;
 let gameData = null;
+let targetWord = null;
+let bestGuessSimilarity = -1;
+let sortedWords = []
+console.log('=== hint worker ===')
 
 function decodeQuantizedEmbedding(wordIndex) {
     if (!gameData) return null;
@@ -41,97 +44,105 @@ function calculateSimilarity(embedding1, embedding2) {
     return dotProduct / (Math.sqrt(norm1) * Math.sqrt(norm2));
 }
 
-self.onmessage = function(e) {
-    const { type, data, calculationId } = e.data;
+async function sortWords() {
+    const wordCount = gameData?.words?.length
+    if (!wordCount) {
+        console.error('No words found in gameData');
+        return;
+    }
+
+
+    const targetWordIndex = gameData.words.indexOf(targetWord);
+    const targetEmbedding = decodeQuantizedEmbedding(targetWordIndex);
+    if (!targetEmbedding) {
+        console.error('Target embedding not found for word:', targetWord);
+        return;
+    }
+    const chunkSize = Math.min(50, wordCount);
+
+
+    for (let wordIndex = 0; wordIndex < wordCount; wordIndex += chunkSize) {
+        sortedWords = sortedWords.filter(item => item.similarity >= bestGuessSimilarity);
+
+        // Process chunk
+        const currentWordIndices = new Array(chunkSize).fill(0).map((_, i) => wordIndex + i);
+        const currentWords = gameData.words.slice(wordIndex, wordIndex + chunkSize);
+        const currentEmbeddings = currentWordIndices.map(decodeQuantizedEmbedding);
+        const currentSimilarities = currentEmbeddings.map(embedding => {
+            return calculateSimilarity(embedding, targetEmbedding);
+        });
+
+        currentWords.forEach((word, index) => {
+            const similarity = currentSimilarities[index];
+            const position = sortedWords.findIndex(item => item.similarity < similarity);
+            if(similarity< bestGuessSimilarity){
+                return;
+            }
+            if (position === -1) {
+                sortedWords.push({word, similarity, index: wordIndex + index});
+            } else {
+                sortedWords.splice(position, 0, {word, similarity, index: wordIndex + index});
+            }
+        });
+
+        // Yield control back
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+}
+
+
+async function calculateHint(data, calculationId){
+    const bestGuess = data.bestGuess;
+    const bestGuessIndex = data.bestGuessIndex
+    const bestGuessEmbedding = decodeQuantizedEmbedding(bestGuessIndex);
+    const targetWordIndex = gameData.words.indexOf(targetWord);
+    const targetEmbedding = decodeQuantizedEmbedding(targetWordIndex);
+    bestGuessSimilarity = calculateSimilarity(bestGuessEmbedding, targetEmbedding);
+
+    const bestHintWordIndex = sortedWords
+        .findIndex(item => item.similarity > bestGuessSimilarity && item.word !== bestGuess);
+
+
+
+    const hintWordObj = sortedWords.find((item,index) => item.word !== targetWord && index===Math.floor(Math.random() * sortedWords.length));
+
+    if (hintWordObj && hintWordObj.word !== targetWord) {
+        self.postMessage({type: 'HINT_READY', data: hintWordObj, calculationId});
+    }
+
+    // get rid of bad hints
+    sortedWords = sortedWords.filter(item => item.similarity >= bestGuessSimilarity || item.word === bestGuess);
+
+    // Yield control back
+    await new Promise(resolve => setTimeout(resolve, 100));
+}
+
+
+self.onmessage = function (e) {
+    const {type, data, calculationId} = e.data;
 
     if (type === 'INIT') {
         gameData = data;
-        self.postMessage({ type: 'INIT_COMPLETE' });
+        targetWord = e.data.targetWord
+        sortedWords = []
+        bestGuessSimilarity = -1;
+        self.postMessage({type: 'INIT_COMPLETE'});
+
+
+
+
+
+        sortWords()
     }
-    else if (type === 'CALCULATE_HINT') {
-        const { targetWord, guessedWords, bestSimilarity, guessCount } = data;
+    if (type === 'NEW_GAME') {
+        targetWord = data.targetWord;
+        bestGuessSimilarity = -1;
+        sortedWords = []
 
-        try {
-            const targetIndex = gameData.words.indexOf(targetWord);
-            if (targetIndex === -1) {
-                self.postMessage({
-                    type: 'ERROR',
-                    error: 'Target word not found',
-                    calculationId: calculationId
-                });
-                return;
-            }
+        sortWords()
 
-            const targetEmbedding = decodeQuantizedEmbedding(targetIndex);
-            const candidates = [];
+    } else if (type === 'CALCULATE_HINT') {
+      calculateHint(data, calculationId)
 
-            // Adaptive sampling: more samples as game progresses
-            let sampleSize = 500; // Start fast
-            if (guessCount > 5) sampleSize = 1000;
-            if (guessCount > 10) sampleSize = 1500;
-            if (guessCount > 15) sampleSize = 2000;
-
-            sampleSize = Math.min(sampleSize, gameData.words.length);
-
-            // Sample words for hint calculation
-            for (let i = 0; i < sampleSize; i++) {
-                const randomIndex = Math.floor(Math.random() * gameData.words.length);
-                const word = gameData.words[randomIndex];
-
-                // Skip if already guessed or is the target
-                if (guessedWords.includes(word) || word === targetWord) continue;
-
-                const embedding = decodeQuantizedEmbedding(randomIndex);
-                const similarity = calculateSimilarity(embedding, targetEmbedding);
-
-                // Adaptive threshold: lower standards early game, higher later
-                let threshold = bestSimilarity + 0.05;
-                if (guessCount < 5) threshold = bestSimilarity + 0.02; // More forgiving early
-                if (guessCount > 10) threshold = bestSimilarity + 0.08; // Higher standards later
-
-                if (similarity > threshold) {
-                    candidates.push({ word, similarity });
-                }
-            }
-
-            if (candidates.length > 0) {
-                // Sort by similarity and pick strategically
-                candidates.sort((a, b) => b.similarity - a.similarity);
-
-                // Pick hint based on game progress
-                let hintIndex;
-                if (guessCount < 3) {
-                    hintIndex = Math.floor(candidates.length * 0.4); // Moderate hint early
-                } else if (guessCount < 8) {
-                    hintIndex = Math.floor(candidates.length * 0.2); // Better hint mid-game
-                } else {
-                    hintIndex = Math.floor(candidates.length * 0.1); // Great hint late game
-                }
-
-                hintIndex = Math.min(hintIndex, candidates.length - 1);
-                const hintWord = candidates[hintIndex];
-
-                self.postMessage({
-                    type: 'HINT_READY',
-                    word: hintWord.word,
-                    similarity: hintWord.similarity,
-                    calculationId: calculationId
-                });
-            } else {
-                self.postMessage({
-                    type: 'HINT_READY',
-                    word: null,
-                    message: "You're doing great! Keep exploring the warm areas.",
-                    calculationId: calculationId
-                });
-            }
-        } catch (error) {
-            self.postMessage({
-                type: 'ERROR',
-                error: error.message,
-                calculationId: calculationId
-            });
-        }
     }
 };
-        
