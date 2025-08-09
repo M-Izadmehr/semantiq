@@ -12,7 +12,7 @@ module.exports = {
         filename: (pathData) => {
             return pathData.chunk.name === 'hint-worker' ? 'hint-worker.js' : 'main.js';
         },
-        path: path.resolve(__dirname, 'outputs', 'dist'),
+        path: path.resolve(__dirname, 'ghpages'),
         clean: true,
         publicPath: './' // Critical for S3 static hosting
     },
