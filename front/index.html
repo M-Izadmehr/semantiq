@@ -312,6 +312,7 @@
             background: rgba(0, 0, 0, 0.2);
             border-radius: 10px;
             padding: 10px;
+            max-height: 300px;
         }
 
         .recent-guesses-heading {
@@ -348,7 +349,6 @@
             transform: scale(1.02);
         }
 
-        /* Mobile-friendly single sort button */
         .sort-btn-mobile {
             width: 100%;
             padding: 10px 15px;
@@ -508,12 +508,10 @@
                 height: 400px;
             }
 
-            /* Hide desktop sort controls on mobile */
             .sort-controls {
                 display: none;
             }
 
-            /* Show mobile sort button */
             .sort-btn-mobile {
                 display: block;
             }
@@ -575,11 +573,11 @@
                        placeholder="Make a guess..." autocomplete="off">
                 <div class="btn-group">
                     <button id="guess-btn" class="guess-btn">Submit Guess</button>
-                    <button id="hint-btn" class="hint-btn">💡Hint</button>
+                    <button id="hint-btn" class="hint-btn">💡 Hint</button>
                 </div>
             </div>
-
         </div>
+
         <div class="input-section">
             <h3 class="recent-guesses-heading">Recent Guesses</h3>
 
