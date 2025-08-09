@@ -1,5 +1,4 @@
 // modules/ui.js - UI management and DOM manipulation
-
 import { Embeddings } from './embeddings.js';
 
 export const UI = {
@@ -43,11 +42,17 @@ export const UI = {
             victoryModal: document.getElementById('victory-modal'),
             victoryWord: document.getElementById('victory-word'),
             victoryGuesses: document.getElementById('victory-guesses'),
-            newGameBtn: document.getElementById('btn-new-game')
+            newGameBtn: document.getElementById('btn-new-game'),
+
+            // Daily header controls
+            dailyTitle: document.getElementById('daily-title'),
+            dailyDate: document.getElementById('daily-date'),
+            prevDayBtn: document.getElementById('btn-prev-day'),
+            nextDayBtn: document.getElementById('btn-next-day')
         };
     },
 
-    // Reset UI for new game
+    // Reset UI for the current game
     reset() {
         this.elements.semanticMap.innerHTML = '';
         this.elements.guessHistory.innerHTML = `
@@ -197,6 +202,14 @@ export const UI = {
 
     // Format a single guess item
     _formatGuessItem(guess, extraClass = '') {
+        if (guess.similarity == null) {
+            return `
+      <div class="guess-item ${extraClass}">
+        <span>${guess.guessNumber} - ${guess.word}</span>
+        <span class="similarity-score">⏳ scoring…</span>
+      </div>
+    `;
+        }
         const similarityClass = this._getSimilarityClass(guess.similarity);
         const label = this._getSimilarityLabel(guess.similarity);
 
@@ -343,13 +356,13 @@ export const UI = {
 
         switch (state) {
             case 'loading':
-                btn.classList.add('loading');
-                btn.textContent = '💡 Calculating...';
-                btn.disabled = false;
+                // btn.classList.add('loading');
+                // btn.textContent = '💡 Calculating...';
+                // btn.disabled = false;
                 break;
             case 'ready':
                 btn.classList.remove('loading');
-                btn.textContent = '💡 Hint Ready';
+                btn.textContent = '💡 Hint';
                 btn.disabled = false;
                 break;
             case 'disabled':
@@ -362,5 +375,56 @@ export const UI = {
                 btn.textContent = '💡 Hint';
                 btn.disabled = false;
         }
+    },
+
+    // === Daily header helpers ===
+    updateDailyHeader({ dateStr, dailyNumber }) {
+        this.elements.dailyTitle.textContent = `Daily #${dailyNumber}`;
+        this.elements.dailyDate.textContent = dateStr;
+    },
+
+    setNextDisabled(isToday) {
+        this.elements.nextDayBtn.disabled = !!isToday;
+        this.elements.nextDayBtn.style.opacity = isToday ? 0.5 : 1;
+        this.elements.nextDayBtn.style.cursor = isToday ? 'not-allowed' : 'pointer';
+    },
+    addPendingGuess(word) {
+        // Fake a minimal guess object for rendering
+        const guess = {
+            word,
+            similarity: null, // key: null means “pending”
+            index: -1,
+            guessNumber: (document.querySelectorAll('#guess-history .guess-item').length || 0) + 1
+        };
+
+        // Put a neutral dot near center so the map feels alive
+        const map = this.elements.semanticMap;
+        const w = map.offsetWidth, h = map.offsetHeight;
+        const x = w / 2 + (Math.random() - 0.5) * Math.min(w, h) * 0.1;
+        const y = h / 2 + (Math.random() - 0.5) * Math.min(w, h) * 0.1;
+
+        const dot = document.createElement('div');
+        dot.className = 'word-dot dot-cool'; // neutral color
+        const size = 30;
+        dot.style.left = `${x - size/2}px`;
+        dot.style.top = `${y - size/2}px`;
+        dot.style.width = `${size}px`;
+        dot.style.height = `${size}px`;
+        dot.style.fontSize = `12px`;
+        dot.textContent = word;
+        dot.title = `${word}: scoring...`;
+
+        map.appendChild(dot);
+
+        // Update history: add a single line at top saying “scoring…”
+        const history = this.elements.guessHistory;
+        const pendingRow = document.createElement('div');
+        pendingRow.className = 'guess-item latest';
+        pendingRow.innerHTML = `
+    <span>${guess.guessNumber} - ${word}</span>
+    <span class="similarity-score">⏳ scoring…</span>
+  `;
+        history.prepend(pendingRow);
     }
+
 };

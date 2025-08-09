@@ -118,7 +118,7 @@ export const HintSystem = {
         return null;
     },
 
-    // Handle messages from worker
+// Handle messages from worker
     _handleWorkerMessage(e) {
         const { type, requestId, data } = e.data;
 
@@ -136,8 +136,14 @@ export const HintSystem = {
 
                 this.cachedHint = data;
                 this.isCalculating = false;
-                console.log('Hint ready:', data?.word || 'none');
-                console.log('Hint ready:', data?.similarity || 'none');
+                console.log('Hint ready:', data?.word || 'none', data?.similarity || 'none');
+
+                // Let UI know a hint is ready (light coupling via DOM class)
+                const btn = document.getElementById('hint-btn');
+                if (btn) {
+                    btn.classList.remove('loading');
+                    btn.textContent = '💡 Hint';
+                }
                 break;
 
             case 'CALCULATION_COMPLETE':
