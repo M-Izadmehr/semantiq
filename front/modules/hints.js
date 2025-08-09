@@ -1,5 +1,3 @@
-// modules/hints.js - Hint system with web worker management
-
 export const HintSystem = {
     // Worker instance
     worker: null,
@@ -78,7 +76,6 @@ export const HintSystem = {
                 return;
             }
         }
-        console.log('cachedHint: ', this.cachedHint)
 
         this.isCalculating = true;
         this.lastRequestId++;

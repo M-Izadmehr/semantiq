@@ -1,4 +1,3 @@
-// modules/ui.js - UI management and DOM manipulation
 import {Embeddings} from './embeddings.js';
 
 export const UI = {
@@ -389,8 +388,6 @@ export const UI = {
         this.elements.nextDayBtn.style.cursor = isToday ? 'not-allowed' : 'pointer';
     },
     addPendingGuess(word, isHint) {
-        console.log('=== addPendingGuess ===')
-        console.log('isHint: ', isHint)
         // Fake a minimal guess object for rendering
         const guess = {
             word,

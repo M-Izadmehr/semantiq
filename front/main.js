@@ -1,4 +1,3 @@
-// main.js - Main game initialization and coordination
 import { Game } from './modules/game.js';
 import { UI } from './modules/ui.js';
 import { HintSystem } from './modules/hints.js';
@@ -112,11 +111,6 @@ function changeDay(dateStr) {
 
 // Handle guess submission
 function handleGuess(wordOverride = null, isHint= false) {
-    console.log('=== handleGuess ===')
-    console.log('isHint: ', isHint)
-    console.log('wordOverride: ', wordOverride)
-    console.log('Game: ', Game)
-    console.log('Game.dataLoaded: ', Game.dataLoaded)
     if (Game.isWon) return;
 
     const word = (wordOverride || UI.elements.guessInput.value.trim().toLowerCase());

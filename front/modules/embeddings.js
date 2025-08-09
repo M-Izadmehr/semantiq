@@ -1,5 +1,3 @@
-// modules/embeddings.js - Handles embedding decoding and similarity calculations
-
 export const Embeddings = {
     // Game data reference
     data: null,

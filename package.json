@@ -1,15 +1,28 @@
 {
   "name": "semantiq",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "server": "node back/server.js"
-  },
+  "description": "Daily semantic word puzzle game",
+  "main": "main.js",
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "express": "^5.1.0"
+  },
+  "scripts": {
+    "server": "node back/server.js",
+    "build": "webpack --config webpack.config.js",
+    "dev": "webpack serve --config webpack.dev.js",
+    "build-dev": "webpack --config webpack.dev.js"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.22.0",
+    "@babel/preset-env": "^7.22.0",
+    "babel-loader": "^9.1.0",
+    "copy-webpack-plugin": "^11.0.0",
+    "html-webpack-plugin": "^5.5.0",
+    "webpack": "^5.88.0",
+    "webpack-cli": "^5.1.0",
+    "webpack-dev-server": "^4.15.0"
   }
 }

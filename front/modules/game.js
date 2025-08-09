@@ -1,4 +1,3 @@
-// modules/game.js - Game state management
 import {Embeddings} from './embeddings.js';
 
 export const Game = {
@@ -41,7 +40,6 @@ export const Game = {
         this.pickTargetForDate(dateStr);
     },
     enqueuePendingGuess(word, isHint = false) {
-        console.log('this.pendingGuesses: ', this.pendingGuesses)
         this.pendingGuesses.push({word, timestamp: Date.now()});
     },
 
