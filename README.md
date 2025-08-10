@@ -2,6 +2,12 @@
 
 A daily word puzzle game that explores the fascinating world of semantic embeddings. Find the hidden word by navigating through high-dimensional meaning space!
 
+![Screenshot](screenshot.png)
+
+###Demo: 
+* https://mojii.io/semantiq
+
+
 ## What is this?
 
 SemantiQuest is a game where you guess words and get feedback based on how semantically similar your guess is to a hidden target word. Instead of traditional clues, you explore the actual mathematical relationships between word meanings as learned by language models.

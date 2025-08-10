@@ -71,7 +71,7 @@ export const Game = {
         }
 
         if (!/^[a-z]+$/.test(word)) {
-            return {valid: false, reason: 'Only lowercase letters allowed'};
+            return {valid: false, reason: 'Only single words allowed'};
         }
 
         const wordIndex = this.data.words.indexOf(word);

@@ -71,10 +71,10 @@ def get_frequency_sorted_words(n_words=100):
         'not', 'on', 'with', 'he', 'as', 'you', 'do', 'at', 'this', 'but', 'his', 'by',
         'from', 'they', 'we', 'say', 'her', 'she', 'or', 'an', 'will', 'my', 'one', 'all',
         'would', 'there', 'their', 'been', 'has', 'had', 'who', 'its', 'now', 'may',
-        'does', 'made', 'get', 'here', 'after', 'back', 'other', 'many', 'than', 'then',
-        'them', 'these', 'two', 'more', 'very', 'what', 'know', 'just', 'first', 'into',
-        'over', 'think', 'also', 'your', 'work', 'only', 'can', 'still', 'should', 'never',
-        'each', 'where', 'every', 'right', 'how', 'our', 'out', 'day', 'most', 'some', 'her'
+        'does', 'many', 'than', 'then',
+        'them', 'these', 'very', 'just', 'into',
+        'over', 'also', 'your', 'only', 'still', 'never',
+        'each', 'how', 'our', 'out', 'most', 'some', 'her'
     }
 
     for word, frequency in word_freq.most_common():
@@ -253,6 +253,7 @@ class EmbeddingGenerator:
         sim = cosine_similarity([self.embeddings[idx1]], [self.embeddings[idx2]])[0][0]
         return float(sim)
 
+
     def export_data(self, output_dir="output"):
         """Export all data in various formats and test sizes"""
         output_path = Path(output_dir)
@@ -338,26 +339,8 @@ class EmbeddingGenerator:
                 f.write(compressed)
             formats['LZ4 (float32)'] = lz4_file.stat().st_size
 
-        # === WEB-OPTIMIZED ===
-        # 7. Base64 + Brotli (web-friendly)
-        b64_file = output_path / "embeddings_b64.json.br"
-        embeddings_f32 = self.embeddings.astype(np.float32)
-        coords_f32 = self.umap_coords.astype(np.float32)
-
-        web_data = {
-            "words": self.words,
-            "embeddings_b64": base64.b64encode(embeddings_f32.tobytes()).decode('ascii'),
-            "coordinates_b64": base64.b64encode(coords_f32.tobytes()).decode('ascii'),
-            "shape": self.embeddings.shape,
-            "coords_shape": self.umap_coords.shape,
-            "dtype": "float32"
-        }
-
-        with open(b64_file, 'wb') as f:
-            f.write(brotli.compress(json.dumps(web_data).encode('utf-8')))
-        formats['Base64 + Brotli (web)'] = b64_file.stat().st_size
-
-        # 8. 8-bit quantized (smallest!)
+        # === QUANTIZED FORMATS ===
+        # 8. 8-bit quantized preparation
         def quantize_to_uint8(arr):
             arr_min, arr_max = arr.min(), arr.max()
             scale = 255.0 / (arr_max - arr_min)
@@ -377,10 +360,35 @@ class EmbeddingGenerator:
             "coords_shape": self.umap_coords.shape
         }
 
+        # 8a. 8-bit quantized JSON (raw) - NEW!
+        quant_json_file = output_path / "embeddings_quantized.json"
+        with open(quant_json_file, 'w') as f:
+            json.dump(quant_data, f)
+        formats['8-bit quantized JSON (raw)'] = quant_json_file.stat().st_size
+
+        # 8b. 8-bit quantized + Brotli (existing)
         quant_file = output_path / "embeddings_quantized.json.br"
         with open(quant_file, 'wb') as f:
             f.write(brotli.compress(json.dumps(quant_data).encode('utf-8')))
         formats['8-bit quantized + Brotli'] = quant_file.stat().st_size
+
+        # 7. Base64 + Brotli (web-friendly)
+        b64_file = output_path / "embeddings_b64.json.br"
+        embeddings_f32 = self.embeddings.astype(np.float32)
+        coords_f32 = self.umap_coords.astype(np.float32)
+
+        web_data = {
+            "words": self.words,
+            "embeddings_b64": base64.b64encode(embeddings_f32.tobytes()).decode('ascii'),
+            "coordinates_b64": base64.b64encode(coords_f32.tobytes()).decode('ascii'),
+            "shape": self.embeddings.shape,
+            "coords_shape": self.umap_coords.shape,
+            "dtype": "float32"
+        }
+
+        with open(b64_file, 'wb') as f:
+            f.write(brotli.compress(json.dumps(web_data).encode('utf-8')))
+        formats['Base64 + Brotli (web)'] = b64_file.stat().st_size
 
         # Print results
         self._print_results(formats)
@@ -390,6 +398,7 @@ class EmbeddingGenerator:
         analyze_similarity_collisions(self.embeddings, self.words, bits=8)
 
         return formats
+
 
     def _print_results(self, formats):
         """Print compression results"""

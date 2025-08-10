@@ -6,11 +6,12 @@ module.exports = {
     mode: 'production',
     entry: {
         main: './front/main.js',
-        'hint-worker': './front/hint-worker.js'
+        'hint-worker': './front/hint-worker.js',
+        sw:'./front/sw.js'
     },
     output: {
         filename: (pathData) => {
-            return pathData.chunk.name === 'hint-worker' ? 'hint-worker.js' : 'main.js';
+            return pathData.chunk.name+'.js';
         },
         path: path.resolve(__dirname, 'ghpages'),
         clean: true,
@@ -57,9 +58,8 @@ module.exports = {
         new CopyWebpackPlugin({
             patterns: [
                 {
-                    from: 'embeddings_quantized.json.br',
-                    to: 'embeddings_quantized.json.br',
-                    noErrorOnMissing: true
+                    from: 'front/embeddings_quantized.json',
+                    to: 'embeddings_quantized.json',
                 }
             ]
         })

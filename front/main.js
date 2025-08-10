@@ -1,14 +1,15 @@
-import { Game } from './modules/game.js';
-import { UI } from './modules/ui.js';
-import { HintSystem } from './modules/hints.js';
-import { Embeddings } from './modules/embeddings.js';
+import {Game} from './modules/game.js';
+import {UI} from './modules/ui.js';
+import {HintSystem} from './modules/hints.js';
+import {Embeddings} from './modules/embeddings.js';
 
 // Configuration
 const CONFIG = {
-    DATA_URL: 'http://localhost:8000/embeddings_quantized.json.br',
-    MAX_WORD_SAMPLE: 1.0, // daily should use full vocab by default; tune if you want a subset
-    TIMEZONE: 'America/Toronto', // daily is anchored to this tz
-    LAUNCH_DATE: '2025-08-01' // first Daily #1 (change as you like)
+    EMBEDDINGS_VERSION: 'v1.0.0', // I can use this line to invalidate the cache later
+    DATA_URL: 'embeddings_quantized.json',
+    MAX_WORD_SAMPLE: 1.0, // daily should use full vocab by default
+    TIMEZONE: 'America/Toronto', // daily is anchored to this tz, just so everyone gets their puzzles switched at same time
+    LAUNCH_DATE: '2025-07-01'
 };
 
 // Global current date string (YYYY-MM-DD, in TZ)
@@ -28,10 +29,16 @@ async function initGame() {
         setupEventListeners();
 
         // Kick off data load in background
+        console.time('fetch-start');
         const response = await fetch(CONFIG.DATA_URL);
+        console.timeEnd('fetch-start');
         if (!response.ok) throw new Error(`Failed to load game data: ${response.status}`);
-        const gameData = await response.json();
 
+        console.time('json-parse-start');
+        const gameData = await response.json();
+        console.timeEnd('json-parse-start');
+
+        console.log('gameData: ', gameData)
         // Finish init once data arrives
         Game.data = gameData;
         Game.dataLoaded = true;
@@ -41,24 +48,13 @@ async function initGame() {
         currentDateStr = Game.getTodayDateStr();
         loadDaily(currentDateStr);
         // Process any early guesses the player entered
-        Game.drainPendingGuesses((word) => handleGuess(word));
+        Game.drainPendingGuesses((word) => handleGuess(word?.toLowerCase()?.trim?.()));
 
     } catch (err) {
         console.error('Init error:', err);
         // No overlay. Just a toast:
         UI.showNotification('Having trouble loading data. Keep guessing—we’ll score as soon as it connects.');
     }
-}
-
-// Show loading error
-function showLoadingError(error) {
-    document.getElementById('loading').innerHTML = `
-        <div style="color: white; text-align: center;">
-            <h2>Error Loading Game</h2>
-            <p>${error.message}</p>
-            <p>Make sure embeddings_quantized.json.br is available.</p>
-        </div>
-    `;
 }
 
 // Setup all event listeners
@@ -110,16 +106,16 @@ function changeDay(dateStr) {
 }
 
 // Handle guess submission
-function handleGuess(wordOverride = null, isHint= false) {
+function handleGuess(wordOverride = null, isHint = false) {
     if (Game.isWon) return;
 
-    const word = (wordOverride || UI.elements.guessInput.value.trim().toLowerCase());
+    const word = (wordOverride?.trim?.()?.toLowerCase() || UI.elements.guessInput.value?.trim?.()?.toLowerCase());
     if (!word) return;
 
     if (!Game.dataLoaded) {
         // Accept any lowercase guess while loading
         if (!/^[a-z]+$/.test(word)) {
-            UI.showNotification('Only lowercase letters allowed');
+            UI.showNotification('Only single words allowed');
             return;
         }
 
@@ -198,7 +194,7 @@ async function handleHint() {
 
     // Use the hint as a guess
     UI.showNotification(`💡 Try: ${hint.word}`);
-    handleGuess(hint.word, true);
+    handleGuess(hint.word?.toLowerCase()?.trim?.(), true);
     Game.hintsUsed++;
     UI.updateStats(Game.getStats());
     Game.saveProgress(currentDateStr);
@@ -273,6 +269,79 @@ function loadDaily(dateStr) {
     UI.updateStats(Game.getStats());
     UI.elements.guessInput.focus();
 }
+
+
+// Service Worker registration with version support
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+            .then(registration => {
+                console.log('SW registered:', registration.scope);
+
+                // Listen for messages from SW
+                navigator.serviceWorker.addEventListener('message', handleSWMessage);
+            })
+            .catch(error => {
+                console.log('SW registration failed:', error);
+            });
+    });
+}
+
+// Handle messages from service worker
+function handleSWMessage(event) {
+    const {action} = event.data || {};
+
+    if (action === 'GET_EMBEDDINGS_VERSION') {
+        // Send current version to SW
+        event.ports[0]?.postMessage({
+            version: CONFIG.EMBEDDINGS_VERSION
+        });
+    }
+}
+
+// Utility functions for cache management
+const CacheManager = {
+    // Force clear all embeddings caches
+    async clearCache() {
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            const messageChannel = new MessageChannel();
+
+            return new Promise((resolve) => {
+                messageChannel.port1.onmessage = (event) => {
+                    resolve(event.data.success);
+                };
+
+                navigator.serviceWorker.controller.postMessage(
+                    {action: 'CLEAR_EMBEDDINGS_CACHE'},
+                    [messageChannel.port2]
+                );
+            });
+        }
+        return false;
+    },
+
+    // Invalidate specific version
+    async invalidateVersion(version) {
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            const messageChannel = new MessageChannel();
+
+            return new Promise((resolve) => {
+                messageChannel.port1.onmessage = (event) => {
+                    resolve(event.data.success);
+                };
+
+                navigator.serviceWorker.controller.postMessage(
+                    {action: 'INVALIDATE_VERSION', version},
+                    [messageChannel.port2]
+                );
+            });
+        }
+        return false;
+    }
+};
+
+// Optional: Add to window for debugging
+window.CacheManager = CacheManager;
 
 // Start the game when page loads
 window.addEventListener('load', initGame);

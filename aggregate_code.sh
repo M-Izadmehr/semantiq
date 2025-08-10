@@ -22,6 +22,7 @@ process_directory() {
            [[ "$file" == *"/node_modules/"* ]] || \
            [[ "$file" == *"/.next/"* ]] || \
            [[ "$file" == *"/dist/"* ]] || \
+           [[ "$file" == *"embeddings_quantized.json"* ]] || \
            [[ "$file" == *"/build/"* ]] || \
            [[ "$file" == *"/__pycache__/"* ]] || \
            [[ "$file" == */.*/* ]] || \
