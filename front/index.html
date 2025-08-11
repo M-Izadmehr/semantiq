@@ -102,28 +102,34 @@
 
         .word-dot:hover {
             transform: scale(1.2) !important;
-            z-index: 10;
+            z-index: 100;
+            opacity: 1 !important;
         }
 
         .dot-cold {
             background: radial-gradient(circle, #66bb6a, #4caf50);
+            opacity: 0.3;
         }
 
         .dot-cool {
             background: radial-gradient(circle, #42a5f5, #1976d2);
+            opacity: 0.5;
         }
 
         .dot-warm {
             background: radial-gradient(circle, #ffb74d, #ff9800);
+            opacity: 0.7;
         }
 
         .dot-hot {
             background: radial-gradient(circle, #e57373, #f44336);
+            opacity: 0.9;
         }
 
         .dot-burning {
             background: radial-gradient(circle, #ffd700, #ffb300);
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+            opacity: 1;
         }
 
         .control-panel {
